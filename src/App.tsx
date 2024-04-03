@@ -1,13 +1,6 @@
 import { useState } from "react";
 
-const PLAYER = {
-  X: "X",
-  O: "O",
-} as const;
-
-type Player = (typeof PLAYER)[keyof typeof PLAYER];
-
-type Square = Player | null;
+type Square = "X" | "O" | null;
 
 const INITIAL_SQUARES: Square[] = Array(9).fill(null);
 
@@ -32,7 +25,7 @@ function calculateWinner(squares: Square[]) {
     const [x, y, z] = combination;
 
     if (squares[x] === squares[y] && squares[x] === squares[z]) {
-      return squares[x] as Player;
+      return squares[x];
     }
   }
 
@@ -42,13 +35,13 @@ function calculateWinner(squares: Square[]) {
 function calculateCurrentPlayer(squares: Square[]) {
   const checkedSquares = squares.filter(Boolean);
   const isEven = checkedSquares.length % 2 === 0;
-  return (isEven ? PLAYER.X : PLAYER.O) as Player;
+  return isEven ? "X" : "O";
 }
 
 function calculateStatus(
   squares: Square[],
-  winner: Player | null,
-  currentPlayer: Player,
+  winner: Square,
+  currentPlayer: "X" | "O",
 ) {
   return winner
     ? `Winner is Player ${winner}`
