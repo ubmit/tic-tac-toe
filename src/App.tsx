@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 const PLAYER = {
   X: "X",
@@ -7,15 +7,9 @@ const PLAYER = {
 
 type Player = (typeof PLAYER)[keyof typeof PLAYER];
 
-type Square = {
-  id: number;
-  player: Player | null;
-};
+type Square = Player | null;
 
-const INITIAL_SQUARES: Square[] = Array.from({ length: 9 }, (_, index) => ({
-  id: index,
-  player: null,
-}));
+const INITIAL_SQUARES: Square[] = Array(9).fill(null);
 
 const WINNING_COMBINATIONS = [
   // rows
@@ -33,73 +27,81 @@ const WINNING_COMBINATIONS = [
   [2, 4, 6],
 ];
 
-function checkWinner(squares: Square[]) {
+function calculateWinner(squares: Square[]) {
   for (const combination of WINNING_COMBINATIONS) {
     const [x, y, z] = combination;
 
-    if (
-      squares[x].player === squares[y].player &&
-      squares[x].player === squares[z].player
-    ) {
-      return squares[x].player;
+    if (squares[x] === squares[y] && squares[x] === squares[z]) {
+      return squares[x] as Player;
     }
   }
 
   return null;
 }
 
+function calculateCurrentPlayer(squares: Square[]) {
+  const checkedSquares = squares.filter(Boolean);
+  const isEven = checkedSquares.length % 2 === 0;
+  return (isEven ? PLAYER.X : PLAYER.O) as Player;
+}
+
+function calculateStatus(
+  squares: Square[],
+  winner: Player | null,
+  currentPlayer: Player,
+) {
+  return winner
+    ? `Winner is Player ${winner}`
+    : squares.every(Boolean)
+      ? "Game over! It's a draw!"
+      : `Player ${currentPlayer}'s turn`;
+}
+
 export default function App() {
   const [squares, setSquares] = useState<Square[]>(INITIAL_SQUARES);
-  const [currentPlayer, setCurrentPlayer] = useState<Player>(PLAYER.X);
-  const [winner, setWinner] = useState<Player | null>(null);
+
+  const winner = calculateWinner(squares);
+  const currentPlayer = calculateCurrentPlayer(squares);
+  const status = calculateStatus(squares, winner, currentPlayer);
 
   function handleChange(id: number) {
-    const newSquares = squares.map((square) => {
-      if (square.id !== id) return square;
-      return {
-        ...square,
-        player: currentPlayer,
-      };
+    const newSquares = squares.map((square, index) => {
+      if (index !== id) return square;
+      return currentPlayer;
     });
     setSquares(newSquares);
-    setCurrentPlayer(currentPlayer === PLAYER.X ? PLAYER.O : PLAYER.X);
   }
 
-  useEffect(() => {
-    setWinner(checkWinner(squares));
-
-    if (squares.every(({ player }) => Boolean(player))) {
-      alert("Game over");
-    }
-  }, [squares]);
-
   return (
-    <div className="flex justify-center flex-col items-center min-h-lvh gap-8">
+    <div className="flex flex-col justify-center items-center min-h-lvh gap-8">
       <h1 className="text-3xl font-bold">tic-tac-toe</h1>
-      {winner ? (
-        <span className="text-lg"> {`Winner is Player ${winner}`}</span>
-      ) : (
-        <span className="text-lg">Player {currentPlayer}'s turn</span>
-      )}
-      <main>
+      <main className="flex flex-col justify-center items-center gap-4">
+        <span className="text-lg"> {status}</span>
         <ul className="grid grid-cols-3 grid-rows-3 gap-1">
-          {squares.map(({ id, player }) => (
-            <li key={id}>
+          {squares.map((square, index) => (
+            <li key={index}>
+              <label
+                className="flex items-center justify-center border border-gray-700 w-24 h-24 text-4xl"
+                htmlFor={`square-${index}-checkbox`}
+              >
+                {square}
+              </label>
               <input
+                hidden
+                id={`square-${index}-checkbox`}
                 type="checkbox"
-                checked={Boolean(player)}
-                onChange={() => handleChange(id)}
-                disabled={Boolean(player)}
+                checked={Boolean(square)}
+                onChange={() => handleChange(index)}
+                disabled={Boolean(winner) || Boolean(square)}
               />
-              <div className="border border-gray-700 w-8 h-8">{player}</div>
             </li>
           ))}
         </ul>
         <button
-          className="bg-gray-600 text-white px-4 py-2 mt-4 rounded-md"
+          className="bg-gray-600 text-white px-4 py-2 rounded-md"
           onClick={() => setSquares(INITIAL_SQUARES)}
         >
-          reset
+          restart
         </button>
       </main>
     </div>
